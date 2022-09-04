@@ -1,0 +1,43 @@
+name: Test
+on: [push, repository_dispatch, deployment]
+env:
+  SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+  TMATE_ENCRYPT_PASSWORD: ${{secrets.TMATE_ENCRYPT_PASSWORD}}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: 'Wait for SSH connection (timeout 5min)'
+      env:
+        TIMEOUT_MIN: 5
+      uses: ./
+
+  test-docker-image:
+    name: Test on docker image
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: 'Wait for SSH connection (timeout 5min)'
+      env:
+        TIMEOUT_MIN: 5
+        TMATE_DOCKER_IMAGE: ubuntu:18.04
+        TMATE_DOCKER_IMAGE_EXP: mytestimage:new
+      uses: ./
+    - run: docker image ls mytestimage:new
+    - run: docker run --rm mytestimage:new ls /
+
+  test-docker-container:
+    name: Test on docker container
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - run: docker run -d -t --name tmate_container ubuntu:18.04
+    - name: 'Wait for SSH connection (timeout 5min)'
+      env:
+        TIMEOUT_MIN: 5
+        TMATE_DOCKER_CONTAINER: tmate_container
+      uses: ./
+    - run: docker exec tmate_container ls /
